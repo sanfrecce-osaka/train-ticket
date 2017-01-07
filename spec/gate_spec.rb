@@ -1,125 +1,72 @@
-require_relative '../spec/spec_helper'
+require "spec_helper"
+require "gate"
+require "ticket"
 
 describe Gate do
-  example '出場許可の判定が正しいこと' do
-    umeda = Gate.new(:umeda)
-    juso = Gate.new(:juso)
-    shonai = Gate.new(:shonai)
-    okamachi = Gate.new(:okamachi)
+  let(:one_section_ticket) { Ticket.new(Ticket::FEE[0]) }
+  let(:two_section_ticket) { Ticket.new(Ticket::FEE[1]) }
+  let(:three_section_ticket) { Ticket.new(Ticket::FEE[2]) }
 
-    # 下り
-    # 1区間
-    ticket = Ticket.new(150)
-    umeda.enter(ticket)
-    expect(juso.exit(ticket)).to be_truthy
+  let(:umeda) { Gate.new(Gate::NAME[0]) }
+  let(:juusou) { Gate.new(Gate::NAME[1]) }
+  let(:shounai) { Gate.new(Gate::NAME[2]) }
+  let(:okamachi) { Gate.new(Gate::NAME[3]) }
 
-    # NOTE: 以下のテストは自分でコメントを外しながらテスト駆動開発を進めてください
+  describe "#exit" do
+    it "1区間・出場成功" do
+      umeda.enter(one_section_ticket)
+      expect(juusou.exit(one_section_ticket)).to be_truthy
+    end
 
-    # # 2区間
-    # ticket = Ticket.new(150)
-    # umeda.enter(ticket)
-    # expect(shonai.exit(ticket)).to be_falsey
+    it "2区間・運賃不足" do
+      umeda.enter(one_section_ticket)
+      expect(shounai.exit(one_section_ticket)).to be_falsey
+    end
+
+    it "2区間・運賃ちょうど" do
+      umeda.enter(two_section_ticket)
+      expect(shounai.exit(two_section_ticket)).to be_truthy
+    end
+
+    it "2区間・運賃過多" do
+      umeda.enter(three_section_ticket)
+      expect(shounai.exit(three_section_ticket)).to be_truthy
+    end
+
+    it "3区間・運賃不足" do
+      umeda.enter(two_section_ticket)
+      expect(okamachi.exit(two_section_ticket)).to be_falsey
+    end
+
+    it "3区間・運賃ちょうど" do
+      umeda.enter(three_section_ticket)
+      expect(okamachi.exit(three_section_ticket)).to be_truthy
+    end
+
+    it "梅田以外の駅から乗車・運賃不足" do
+      juusou.enter(one_section_ticket)
+      expect(okamachi.exit(one_section_ticket)).to be_falsey
+    end
+
+    it "梅田以外の駅から乗車・運賃ちょうど" do
+      juusou.enter(two_section_ticket)
+      expect(okamachi.exit(two_section_ticket)).to be_truthy
+    end
+
+    # it "上り"
     #
-    # ticket = Ticket.new(180)
-    # umeda.enter(ticket)
-    # expect(shonai.exit(ticket)).to be_truthy
+    it "同じ駅で降りる" do
+      umeda.enter(one_section_ticket)
+      expect { umeda.exit(one_section_ticket) }.to raise_error(ExitSameStationError)
+    end
+
+    it "一度入場した切符でもう一度入場する" do
+    #   umeda.enter(one_section_ticket)
+    #   expect { umeda.enter(one_section_ticket) }.to raise_error(AlreadyEnteredError)
+    # end
     #
-    # ticket = Ticket.new(220)
-    # umeda.enter(ticket)
-    # expect(shonai.exit(ticket)).to be_truthy
+    # it "使用済みの切符でもう一度出場する"
     #
-    # # 3区間
-    # ticket = Ticket.new(180)
-    # umeda.enter(ticket)
-    # expect(okamachi.exit(ticket)).to be_falsey
-    #
-    # ticket = Ticket.new(220)
-    # umeda.enter(ticket)
-    # expect(okamachi.exit(ticket)).to be_truthy
-    #
-    # # 梅田以外から乗車
-    # ticket = Ticket.new(150)
-    # juso.enter(ticket)
-    # expect(okamachi.exit(ticket)).to be_falsey
-    #
-    # ticket = Ticket.new(180)
-    # juso.enter(ticket)
-    # expect(okamachi.exit(ticket)).to be_truthy
-    #
-    # # 上り
-    # # 1区間
-    # ticket = Ticket.new(150)
-    # okamachi.enter(ticket)
-    # expect(shonai.exit(ticket)).to be_truthy
-    #
-    # # 2区間
-    # ticket = Ticket.new(150)
-    # okamachi.enter(ticket)
-    # expect(juso.exit(ticket)).to be_falsey
-    #
-    # ticket = Ticket.new(180)
-    # okamachi.enter(ticket)
-    # expect(juso.exit(ticket)).to be_truthy
-    #
-    # ticket = Ticket.new(220)
-    # okamachi.enter(ticket)
-    # expect(juso.exit(ticket)).to be_truthy
-    #
-    # # 3区間
-    # ticket = Ticket.new(180)
-    # okamachi.enter(ticket)
-    # expect(umeda.exit(ticket)).to be_falsey
-    #
-    # ticket = Ticket.new(220)
-    # okamachi.enter(ticket)
-    # expect(umeda.exit(ticket)).to be_truthy
-    #
-    # # 岡町以外から乗車
-    # ticket = Ticket.new(150)
-    # shonai.enter(ticket)
-    # expect(umeda.exit(ticket)).to be_falsey
-    #
-    # ticket = Ticket.new(180)
-    # shonai.enter(ticket)
-    # expect(umeda.exit(ticket)).to be_truthy
+    # it "改札を通っていない切符で出場する"
   end
-
-  # NOTE: 以下のテストも同様に自分でコメントを外しながらテスト駆動開発を進めてください
-
-  # context '同じ駅で降りる場合' do
-  #   example 'エラーが発生する' do
-  #     ticket = Ticket.new(150)
-  #     umeda = Gate.new(:umeda)
-  #     umeda.enter(ticket)
-  #     expect { umeda.exit(ticket) }.to raise_error(ExitSameStationError)
-  #   end
-  # end
-  #
-  # context '改札を通った切符でもう一度入場する場合' do
-  #   example 'エラーが発生する' do
-  #     ticket = Ticket.new(150)
-  #     umeda = Gate.new(:umeda)
-  #     umeda.enter(ticket)
-  #     expect { umeda.enter(ticket) }.to raise_error(AlreadyEnteredTicketError)
-  #   end
-  # end
-  #
-  # context '使用済みの切符でもう一度降りる場合' do
-  #   example 'エラーが発生する' do
-  #     ticket = Ticket.new(150)
-  #     umeda = Gate.new(:umeda)
-  #     juso = Gate.new(:juso)
-  #     umeda.enter(ticket)
-  #     expect(juso.exit(ticket)).to be_truthy
-  #     expect { juso.exit(ticket) }.to raise_error(StaleTicketError)
-  #   end
-  # end
-  #
-  # context '改札を通っていない切符で降りる場合' do
-  #   example 'エラーが発生する' do
-  #     ticket = Ticket.new(150)
-  #     umeda = Gate.new(:umeda)
-  #     expect { umeda.exit(ticket) }.to raise_error(NotEnteredTicketError)
-  #   end
-  # end
 end
