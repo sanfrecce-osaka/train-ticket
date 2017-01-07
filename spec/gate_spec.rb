@@ -60,7 +60,7 @@ describe Gate do
       expect { umeda.exit(one_section_ticket) }.to raise_error(ExitSameStationError)
     end
 
-    it "一度入場した切符でもう一度入場する" do
+    # it "一度入場した切符でもう一度入場する" do
     #   umeda.enter(one_section_ticket)
     #   expect { umeda.enter(one_section_ticket) }.to raise_error(AlreadyEnteredError)
     # end
